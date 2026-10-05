@@ -1,25 +1,121 @@
 # Project One Move-Between-Rooms Pseudocode
 #
 # Graded checkpoint: Module Five Project One
-# Later use: conceptual support for M6; movement design for M7
 #
-# Review the course-provided movement flowchart before completing this file.
-# Write pseudocode, not Python code. Use clear indentation and course-appropriate
-# keywords such as INPUT, OUTPUT, IF, ELSE, WHILE, SET, or similar terms.
+# Game: Bramble Hollow Apiary
+# Design reference: design/game_storyboard.md and design/game_map.drawio
+# Movement commands used by this design: "go north", "go south",
+# "go east", "go west" (these match the direction labels on the map).
 
 # TODO 1: Identify the information the movement process needs.
 # Consider the player's current room and movement command.
 
+SET current_room          # the room the player is standing in now
+SET direction             # the direction the player typed
+SET valid_directions      # the directions leading out of the current room
+SET next_room             # the room a valid direction leads to
+SET command               # the full command the player typed
+
+# The room dictionary is the source of truth. Each room lists the
+# directions that open from it, and each direction points at the room
+# key it leads to. This is the same structure the game will build in
+# Module Seven.
+
+ROOMS = {
+    "room0": { "name": "Honey Gate",              "directions": { "west": "room1" } },
+    "room1": { "name": "Bottling Shed",           "directions": { "east": "room0", "north": "room2" } },
+    "room2": { "name": "Wax Works",               "directions": { "south": "room1", "north": "room3" } },
+    "room3": { "name": "Lavender Rows",           "directions": { "south": "room2", "east": "room4" } },
+    "room4": { "name": "Willow Bend",             "directions": { "west": "room3", "south": "room5" } },
+    "room5": { "name": "Honey Cellar",            "directions": { "north": "room4", "west": "room6" } },
+    "room6": { "name": "Clay Road",               "directions": { "east": "room5", "north": "room7" } },
+    "room7": { "name": "Hollow Queen's Chamber",  "directions": { "south": "room6" } }
+}
+
+SET current_room = "room0"      # the player always begins at the Honey Gate
+
 # TODO 2: Prompt for and receive the player's movement command.
+
+OUTPUT "You are in " + ROOMS[current_room]["name"] + "."
+OUTPUT "What do you want to do?"
+INPUT command
 
 # TODO 3: Validate whether the requested movement is possible from the
 # current room. Show the decision clearly.
 
+SET valid_directions = the keys of ROOMS[current_room]["directions"]
+
+IF command starts with "go"
+    SET direction = the direction word in command
+ELSE
+    SET direction = ""          # not a movement command at all
+END IF
+
+IF direction IS one of valid_directions
+    SET next_room = ROOMS[current_room]["directions"][direction]
+    movement is VALID
+ELSE IF direction = ""
+    movement is NOT_A_MOVE
+ELSE
+    movement is BLOCKED
+END IF
+
 # TODO 4: Describe what happens when the movement command is valid.
 # Include the room update and player output.
+
+IF movement is VALID
+    SET current_room = next_room
+    OUTPUT "You go " + direction + "."
+    OUTPUT "You arrive at " + ROOMS[current_room]["name"] + "."
+    IF ROOMS[current_room] holds an uncollected item
+        OUTPUT "You see " + item_name + " here."
+    END IF
+    IF current_room = "room7"
+        OUTPUT "Marrow, the Hollow Queen, is waiting for you."
+        HAND OFF to the villain encounter
+    END IF
+END IF
 
 # TODO 5: Describe what happens when the movement command is invalid.
 # Include the output the player should receive.
 
+IF movement is BLOCKED
+    OUTPUT "You cannot go " + direction + " from here."
+    OUTPUT "From here you can only " + valid_directions.
+    current_room does NOT change
+END IF
+
+IF movement is NOT_A_MOVE
+    OUTPUT "That is not a direction you can travel."
+    OUTPUT "Try go north, go south, go east, or go west."
+    current_room does NOT change
+END IF
+
 # TODO 6: Show how movement fits into repeated gameplay.
-# The final game continues accepting commands until a required ending occurs.
+# The final game continues accepting commands until a required ending
+# occurs.
+
+SET game_over = FALSE
+
+WHILE game_over = FALSE
+    OUTPUT "You are in " + ROOMS[current_room]["name"] + "."
+    OUTPUT "What do you want to do?"
+    INPUT command
+
+    IF command starts with "go"
+        RUN the movement steps above from TODO 3
+    ELSE IF command starts with "get"
+        RUN the item pickup steps from design/get_item.pseudo
+    ELSE
+        OUTPUT "You can go somewhere or get an item."
+    END IF
+
+    IF current_room = "room7"
+        RUN the villain encounter
+        IF the player wins OR the player loses
+            SET game_over = TRUE
+        END IF
+    END IF
+END WHILE
+
+OUTPUT "The game has ended."
